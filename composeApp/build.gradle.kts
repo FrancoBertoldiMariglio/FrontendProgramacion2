@@ -52,6 +52,7 @@ kotlin {
             implementation(compose.components.uiToolingPreview)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtime.compose)
+            implementation(libs.navigation.compose)
         }
     }
 }
@@ -91,5 +92,8 @@ android {
     dependencies {
         debugImplementation(compose.uiTooling)
     }
+}
+dependencies {
+    implementation(libs.androidx.navigation.compose)
 }
 
