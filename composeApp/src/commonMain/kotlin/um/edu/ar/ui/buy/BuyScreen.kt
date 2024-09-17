@@ -29,14 +29,12 @@ fun BuyScreen(dispositivo: Dispositivo, viewModel: BuyViewModel, navController: 
         Text("Precio: $${dispositivo.precioBase}", style = MaterialTheme.typography.h6)
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Mostrar características
         Text("Características:", style = MaterialTheme.typography.h6)
         dispositivo.caracteristicas.forEach { caracteristica ->
             Text("• ${caracteristica.nombre}: ${caracteristica.descripcion}")
         }
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Mostrar personalizaciones
         dispositivo.personalizaciones.forEach { personalizacion ->
             Text(personalizacion.nombre, style = MaterialTheme.typography.h6)
             personalizacion.opciones.forEach { opcion ->
@@ -57,7 +55,6 @@ fun BuyScreen(dispositivo: Dispositivo, viewModel: BuyViewModel, navController: 
         }
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Mostrar adicionales
         Text("Adicionales:", style = MaterialTheme.typography.h6)
         dispositivo.adicionales.forEach { adicional ->
             Row(
