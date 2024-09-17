@@ -12,6 +12,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import um.edu.ar.ui.dispositivos.Dispositivo
 
 @Composable
@@ -21,20 +23,24 @@ fun DispositivosScreen(viewModel: DispositivosViewModel, navController: NavContr
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp)
+        Box(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .width(600.dp)
+                .padding(3.dp)
         ) {
-            items(dispositivos) { dispositivo ->
-                DispositivoCard(dispositivo)
-                Spacer(modifier = Modifier.height(16.dp))
+            LazyColumn {
+                items(dispositivos) { dispositivo ->
+                    DispositivoCard(dispositivo, navController)
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
         }
     }
 }
 
 @Composable
-fun DispositivoCard(dispositivo: Dispositivo) {
+fun DispositivoCard(dispositivo: Dispositivo, navController: NavController) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = 4.dp
@@ -51,26 +57,39 @@ fun DispositivoCard(dispositivo: Dispositivo) {
             Text(text = dispositivo.descripcion)
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Precio: ${dispositivo.precioBase} ${dispositivo.moneda}",
+                text = "Price: ${dispositivo.precioBase} ${dispositivo.moneda}",
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF87CEEB)
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Características:",
+                text = "Characteristics:",
                 fontWeight = FontWeight.Bold
             )
             dispositivo.caracteristicas.forEach { caracteristica ->
                 Text("• ${caracteristica.nombre}: ${caracteristica.descripcion}")
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Button(
-                onClick = { /* TODO: Implement device selection */ },
-                modifier = Modifier.align(Alignment.End),
-                colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF87CEEB))
-            ) {
-                Text("Ver detalles", color = Color.White)
-            }
+            BuyButton(dispositivo, navController)
         }
+    }
+}
+
+@Composable
+fun BuyButton(dispositivo: Dispositivo, navController: NavController) {
+    val dispositivoJson = Json.encodeToString(dispositivo)
+    Button(
+        onClick = { navController.navigate("buy/$dispositivoJson") },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp),
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = Color(0xFF87CEEB),
+            disabledBackgroundColor = Color(0xFFB0B0B0),
+            contentColor = Color.White,
+            disabledContentColor = Color.White
+        )
+    ) {
+        Text(text = "Buy")
     }
 }

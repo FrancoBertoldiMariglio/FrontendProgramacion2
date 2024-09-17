@@ -1,7 +1,6 @@
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import um.edu.ar.ui.dispositivos.Dispositivo
 
@@ -9,9 +8,6 @@ class DispositivosViewModel : ViewModel() {
 
     private val _dispositivos = MutableStateFlow<List<Dispositivo>>(emptyList())
     val dispositivos: StateFlow<List<Dispositivo>> = _dispositivos
-
-    private val _selectedDispositivo = MutableStateFlow<Dispositivo?>(null)
-    val selectedDispositivo: StateFlow<Dispositivo?> = _selectedDispositivo
 
     init {
         loadDispositivos()
