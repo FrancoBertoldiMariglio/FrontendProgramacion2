@@ -72,7 +72,7 @@ fun Login(modifier: Modifier, viewModel: LoginViewModel, navController: NavContr
                 ForgotPassword(Modifier, navController)
             }
             Spacer(modifier = Modifier.padding(8.dp))
-            LoginButton(loginEnable) {
+            LoginButton(loginEnable, navController) {
                 coroutineScope.launch {
                     viewModel.onLoginSelected()
                 }
@@ -82,9 +82,12 @@ fun Login(modifier: Modifier, viewModel: LoginViewModel, navController: NavContr
 }
 
 @Composable
-fun LoginButton(loginEnable: Boolean, onLoginSelected: () -> Unit) {
+fun LoginButton(loginEnable: Boolean, navController: NavController, onLoginSelected: () -> Unit) {
     Button(
-        onClick = { onLoginSelected() },
+        onClick = {
+            onLoginSelected()
+            navController.navigate("dispositivos")
+        },
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp),

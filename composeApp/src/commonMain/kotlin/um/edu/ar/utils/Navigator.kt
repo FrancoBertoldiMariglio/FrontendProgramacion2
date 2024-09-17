@@ -1,5 +1,7 @@
-package um.edu.ar
+package um.edu.ar.utils
 
+import DispositivosScreen
+import DispositivosViewModel
 import LoginViewModel
 import RegisterViewModel
 import androidx.compose.runtime.Composable
@@ -22,6 +24,9 @@ fun AppNavigation() {
         }
         composable("register") {
             RegisterScreen(viewModel = RegisterViewModel(), navController = navController)
+        }
+        composable("dispositivos") {
+            DispositivosScreen(viewModel = DispositivosViewModel(), navController = navController)
         }
     }
 }
