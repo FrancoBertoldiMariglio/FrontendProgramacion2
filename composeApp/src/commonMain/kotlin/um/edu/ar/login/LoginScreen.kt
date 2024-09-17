@@ -3,7 +3,6 @@ package um.edu.ar.login
 import LoginViewModel
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -19,7 +18,6 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import proyectoprogramacion2.composeapp.generated.resources.Res
-import proyectoprogramacion2.composeapp.generated.resources.compose_multiplatform
 import proyectoprogramacion2.composeapp.generated.resources.logo
 
 @Composable

@@ -17,7 +17,7 @@ class LoginViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    private val emailPattern = "^[\\w.-]+@[a-zA-Z\\d.-]+\\.[a-zA-Z]{2,}$".toRegex()
+    private val emailPattern = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\$".toRegex()
 
     fun onLoginChanged(email: String, password: String) {
         _email.value = email
