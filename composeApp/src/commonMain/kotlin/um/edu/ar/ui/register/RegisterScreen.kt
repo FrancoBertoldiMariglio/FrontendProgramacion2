@@ -22,6 +22,9 @@ import proyectoprogramacion2.composeapp.generated.resources.logo
 
 @Composable
 fun RegisterScreen(viewModel: RegisterViewModel, navController: NavController) {
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -38,8 +41,24 @@ fun RegisterScreen(viewModel: RegisterViewModel, navController: NavController) {
                 navController = navController
             )
         }
+
+        if (errorMessage != null) {
+            Snackbar(
+                action = {
+                    TextButton(onClick = { viewModel.clearErrorMessage() }) {
+                        Text("Cerrar")
+                    }
+                },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            ) { Text(text = errorMessage ?: "") }
+        }
+
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        }
     }
 }
+
 
 @Composable
 fun Register(modifier: Modifier, viewModel: RegisterViewModel, navController: NavController) {
@@ -48,33 +67,27 @@ fun Register(modifier: Modifier, viewModel: RegisterViewModel, navController: Na
     val email: String by viewModel.email.collectAsState(initial = "")
     val password: String by viewModel.password.collectAsState(initial = "")
     val registerEnable: Boolean by viewModel.registerEnable.collectAsState(initial = false)
-    val isLoading: Boolean by viewModel.isLoading.collectAsState(initial = false)
     val coroutineScope = rememberCoroutineScope()
 
-    if (isLoading) {
-        Box(Modifier.fillMaxSize()) {
-            CircularProgressIndicator(Modifier.align(Alignment.Center))
-        }
-    } else {
-        Column(modifier = modifier) {
-            HeaderImage(Modifier.align(Alignment.CenterHorizontally))
-            Spacer(modifier = Modifier.padding(16.dp))
-            LoginField(login) { viewModel.onRegisterChanged(it, email, password) }
-            Spacer(modifier = Modifier.padding(4.dp))
-            EmailField(email) { viewModel.onRegisterChanged(login, it, password) }
-            Spacer(modifier = Modifier.padding(4.dp))
-            PasswordField(password) { viewModel.onRegisterChanged(login, email, it) }
-            Spacer(modifier = Modifier.padding(4.dp))
-            LogInButton(Modifier.align(Alignment.End), navController)
-            Spacer(modifier = Modifier.padding(8.dp))
-            RegisterButton(registerEnable) {
-                coroutineScope.launch {
-                    viewModel.onRegisterSelected()
-                }
+    Column(modifier = modifier) {
+        HeaderImage(Modifier.align(Alignment.CenterHorizontally))
+        Spacer(modifier = Modifier.padding(16.dp))
+        LoginField(login) { viewModel.onRegisterChanged(it, email, password) }
+        Spacer(modifier = Modifier.padding(4.dp))
+        EmailField(email) { viewModel.onRegisterChanged(login, it, password) }
+        Spacer(modifier = Modifier.padding(4.dp))
+        PasswordField(password) { viewModel.onRegisterChanged(login, email, it) }
+        Spacer(modifier = Modifier.padding(4.dp))
+        LogInButton(Modifier.align(Alignment.End), navController)
+        Spacer(modifier = Modifier.padding(8.dp))
+        RegisterButton(registerEnable) {
+            coroutineScope.launch {
+                viewModel.onRegisterSelected(navController)
             }
         }
     }
 }
+
 
 @Composable
 fun RegisterButton(registerEnable: Boolean, onRegisterSelected: () -> Unit) {

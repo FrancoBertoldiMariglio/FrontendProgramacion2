@@ -17,6 +17,8 @@ kotlin = "2.0.20"
 kotlinx-serialization = "1.6.3"
 kotlinxDatetime = "0.6.1"
 ktorClientCore = "2.3.3"
+ktorClientCoreVersion = "2.0.0"
+ktorClientJson = "2.0.0"
 navigationCompose = "2.8.0"
 navigationComposeVersion = "2.7.0-alpha07"
 
@@ -37,10 +39,14 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktorClientCore" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktorClientCoreVersion" }
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktorClientCore" }
+ktor-client-core-v200 = { module = "io.ktor:ktor-client-core", version.ref = "ktorClientCoreVersion" }
 ktor-client-js = { module = "io.ktor:ktor-client-js", version.ref = "ktorClientCore" }
 ktor-client-json = { module = "io.ktor:ktor-client-json", version.ref = "ktorClientCore" }
+ktor-client-json-v200 = { module = "io.ktor:ktor-client-json", version.ref = "ktorClientJson" }
 ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktorClientCore" }
+ktor-client-serialization = { module = "io.ktor:ktor-client-serialization", version.ref = "ktorClientCoreVersion" }
 navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "navigationComposeVersion" }
 
 [plugins]

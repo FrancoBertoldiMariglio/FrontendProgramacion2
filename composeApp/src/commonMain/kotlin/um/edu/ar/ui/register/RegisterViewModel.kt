@@ -1,9 +1,21 @@
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import um.edu.ar.network.RegisterService
+import um.edu.ar.ui.register.RegisterModel
 
 class RegisterViewModel : ViewModel() {
+
+    private val client = HttpClient(CIO)
+    private val registerService = RegisterService(client)
+
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage
 
     private val _login = MutableStateFlow("")
     val login: StateFlow<String> = _login
@@ -13,9 +25,6 @@ class RegisterViewModel : ViewModel() {
 
     private val _password = MutableStateFlow("")
     val password: StateFlow<String> = _password
-
-    private val _langKey = MutableStateFlow("es")
-    val langKey: StateFlow<String> = _langKey
 
     private val _registerEnable = MutableStateFlow(false)
     val registerEnable: StateFlow<Boolean> = _registerEnable
@@ -36,9 +45,26 @@ class RegisterViewModel : ViewModel() {
 
     private fun isValidEmail(email: String): Boolean = emailPattern.matches(email)
 
-    suspend fun onRegisterSelected() {
-        _isLoading.value = true
-        delay(4000)
-        _isLoading.value = false
+    fun onRegisterSelected(navController: NavController) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+
+            val registerModel = RegisterModel(login.value, email.value, password.value)
+            val response = registerService.register(registerModel)
+
+            println(response)
+
+            _isLoading.value = false
+            if (response.success) {
+                navController.navigate("login")
+            } else {
+                _errorMessage.value = "Registro fallido"
+            }
+        }
+    }
+
+    fun clearErrorMessage() {
+        _errorMessage.value = null
     }
 }

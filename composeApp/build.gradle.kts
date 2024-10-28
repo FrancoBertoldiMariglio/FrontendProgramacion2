@@ -56,6 +56,9 @@ kotlin {
             implementation(libs.navigation.compose)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.datetime)
+            implementation(libs.ktor.client.core.v200)
+            implementation(libs.ktor.client.cio)
+            implementation(libs.ktor.client.json.v200)
         }
     }
 }
