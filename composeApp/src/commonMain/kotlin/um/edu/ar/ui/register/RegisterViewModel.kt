@@ -1,17 +1,16 @@
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import um.edu.ar.network.RegisterService
 import um.edu.ar.ui.register.RegisterModel
+import um.edu.ar.utils.createPlatformHttpClient
 
 class RegisterViewModel : ViewModel() {
 
-    private val client = HttpClient(CIO)
+    private val client = createPlatformHttpClient()
     private val registerService = RegisterService(client)
 
     private val _errorMessage = MutableStateFlow<String?>(null)
