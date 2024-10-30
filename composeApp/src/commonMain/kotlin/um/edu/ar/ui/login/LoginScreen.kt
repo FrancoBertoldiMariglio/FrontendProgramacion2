@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import proyectoprogramacion2.composeapp.generated.resources.Res
 import proyectoprogramacion2.composeapp.generated.resources.logo
+import um.edu.ar.ui.register.EmailField
 
 
 @Composable
@@ -45,11 +46,11 @@ fun LoginScreen(viewModel: LoginViewModel, navController: NavController) {
 
 @Composable
 fun Login(modifier: Modifier, viewModel: LoginViewModel, navController: NavController) {
-
-    val email: String by viewModel.email.collectAsState(initial = "")
+    val username: String by viewModel.username.collectAsState(initial = "")
     val password: String by viewModel.password.collectAsState(initial = "")
     val loginEnable: Boolean by viewModel.loginEnable.collectAsState(initial = false)
     val isLoading: Boolean by viewModel.isLoading.collectAsState(initial = false)
+    val loginError: String? by viewModel.loginError.collectAsState(initial = null)
     val coroutineScope = rememberCoroutineScope()
 
     if (isLoading) {
@@ -60,9 +61,9 @@ fun Login(modifier: Modifier, viewModel: LoginViewModel, navController: NavContr
         Column(modifier = modifier) {
             HeaderImage(Modifier.align(Alignment.CenterHorizontally))
             Spacer(modifier = Modifier.padding(16.dp))
-            EmailField(email) { viewModel.onLoginChanged(it, password) }
+            UsernameField(username) { viewModel.onLoginChanged(it, password) }
             Spacer(modifier = Modifier.padding(4.dp))
-            PasswordField(password) { viewModel.onLoginChanged(email, it) }
+            PasswordField(password) { viewModel.onLoginChanged(username, it) }
             Spacer(modifier = Modifier.padding(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -72,22 +73,27 @@ fun Login(modifier: Modifier, viewModel: LoginViewModel, navController: NavContr
                 ForgotPassword(Modifier, navController)
             }
             Spacer(modifier = Modifier.padding(8.dp))
-            LoginButton(loginEnable, navController) {
+            LoginButton(loginEnable) {
                 coroutineScope.launch {
-                    viewModel.onLoginSelected()
+                    viewModel.onLoginSelected(navController)
                 }
+            }
+            if (loginError != null) {
+                Spacer(modifier = Modifier.padding(8.dp))
+                Text(
+                    text = loginError!!,
+                    color = Color.Red,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
             }
         }
     }
 }
 
 @Composable
-fun LoginButton(loginEnable: Boolean, navController: NavController, onLoginSelected: () -> Unit) {
+fun LoginButton(loginEnable: Boolean, onLoginSelected: () -> Unit) {
     Button(
-        onClick = {
-            onLoginSelected()
-            navController.navigate("dispositivos")
-        },
+        onClick = onLoginSelected,
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp),
@@ -121,12 +127,12 @@ fun PasswordField(password: String, onTextFieldChanged: (String) -> Unit) {
 }
 
 @Composable
-fun EmailField(email: String, onTextFieldChanged: (String) -> Unit) {
+fun UsernameField(username: String, onTextFieldChanged: (String) -> Unit) {
     TextField(
-        value = email, onValueChange = { onTextFieldChanged(it) },
-        placeholder = { Text(text = "Email") },
+        value = username, onValueChange = { onTextFieldChanged(it) },
+        placeholder = { Text(text = "Username") },
         modifier = Modifier.fillMaxWidth(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
         singleLine = true,
         maxLines = 1,
         colors = TextFieldDefaults.textFieldColors(

@@ -12,7 +12,7 @@ data class RegisterResponse(val success: Boolean, val message: String?)
 
 class RegisterService(private val client: HttpClient) {
     suspend fun register(registerModel: RegisterModel): RegisterResponse {
-        val response: HttpResponse = client.post("http://localhost:8080/api/register") {
+        val response: HttpResponse = client.post("http://192.168.212.218:8080/api/register") {
             contentType(ContentType.Application.Json)
             setBody(registerModel)
         }

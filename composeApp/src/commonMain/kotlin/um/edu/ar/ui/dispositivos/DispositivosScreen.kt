@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import um.edu.ar.ui.dispositivos.Dispositivo
+import um.edu.ar.ui.dispositivos.DispositivoModel
 
 @Composable
 fun DispositivosScreen(viewModel: DispositivosViewModel, navController: NavController) {
@@ -40,7 +40,7 @@ fun DispositivosScreen(viewModel: DispositivosViewModel, navController: NavContr
 }
 
 @Composable
-fun DispositivoCard(dispositivo: Dispositivo, navController: NavController) {
+fun DispositivoCard(dispositivo: DispositivoModel, navController: NavController) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = 4.dp
@@ -76,7 +76,7 @@ fun DispositivoCard(dispositivo: Dispositivo, navController: NavController) {
 }
 
 @Composable
-fun BuyButton(dispositivo: Dispositivo, navController: NavController) {
+fun BuyButton(dispositivo: DispositivoModel, navController: NavController) {
     val dispositivoJson = Json.encodeToString(dispositivo)
     Button(
         onClick = { navController.navigate("buy/$dispositivoJson") },

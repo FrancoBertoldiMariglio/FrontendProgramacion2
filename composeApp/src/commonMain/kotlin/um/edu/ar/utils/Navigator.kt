@@ -14,7 +14,7 @@ import androidx.navigation.navArgument
 import kotlinx.serialization.json.Json
 import um.edu.ar.ui.buy.BuyScreen
 import um.edu.ar.ui.buy.BuyViewModel
-import um.edu.ar.ui.dispositivos.Dispositivo
+import um.edu.ar.ui.dispositivos.DispositivoModel
 import um.edu.ar.ui.register.RegisterScreen
 import um.edu.ar.ui.login.LoginScreen
 
@@ -23,7 +23,7 @@ fun AppNavigation() {
     val navController: NavHostController = rememberNavController()
     NavHost(
         navController = navController,
-        startDestination = "login" 
+        startDestination = "login"
     ) {
         composable("login") {
             LoginScreen(viewModel = LoginViewModel(), navController = navController)
@@ -40,7 +40,7 @@ fun AppNavigation() {
         ) { backStackEntry ->
             val dispositivoJson = backStackEntry.arguments?.getString("dispositivoJson")
             dispositivoJson?.let {
-                val dispositivo = Json.decodeFromString<Dispositivo>(it)
+                val dispositivo = Json.decodeFromString<DispositivoModel>(it)
                 BuyScreen(dispositivo = dispositivo, viewModel = BuyViewModel(), navController = navController)
             }
         }

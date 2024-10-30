@@ -3,35 +3,35 @@ package um.edu.ar.ui.dispositivos
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Dispositivo (
+data class DispositivoModel (
     val id: Int,
     val codigo: String,
     val nombre: String,
     val descripcion: String,
     val precioBase: Double,
     val moneda: String,
-    val caracteristicas: List<Caracteristica>,
-    val personalizaciones: List<Personalizacion>,
-    val adicionales: List<Adicional>,
+    val caracteristicas: List<CaracteristicaModel>,
+    val personalizaciones: List<PersonalizacionModel>,
+    val adicionales: List<AdicionalModel>,
 )
 
 @Serializable
-data class Caracteristica (
+data class CaracteristicaModel (
     val id: Int,
     val nombre: String,
     val descripcion: String
 )
 
 @Serializable
-data class Personalizacion (
+data class PersonalizacionModel (
     val id: Int,
     val nombre: String,
     val descripcion: String,
-    val opciones: List<Opcion>
+    val opciones: List<OpcionModel>
 )
 
 @Serializable
-data class Opcion (
+data class OpcionModel (
     val id: Int,
     val codigo: String,
     val nombre: String,
@@ -40,7 +40,7 @@ data class Opcion (
 )
 
 @Serializable
-data class Adicional (
+data class AdicionalModel (
     val id: Int,
     val nombre: String,
     val descripcion: String,

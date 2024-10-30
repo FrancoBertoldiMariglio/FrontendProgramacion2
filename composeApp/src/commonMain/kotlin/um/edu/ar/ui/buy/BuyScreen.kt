@@ -7,14 +7,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import um.edu.ar.ui.dispositivos.Adicional
-import um.edu.ar.ui.dispositivos.Dispositivo
-import um.edu.ar.ui.dispositivos.Opcion
+import um.edu.ar.ui.dispositivos.AdicionalModel
+import um.edu.ar.ui.dispositivos.DispositivoModel
+import um.edu.ar.ui.dispositivos.OpcionModel
 
 @Composable
-fun BuyScreen(dispositivo: Dispositivo, viewModel: BuyViewModel, navController: NavController) {
-    val selectedOptions = remember { mutableStateMapOf<Int, Opcion>() }
-    val selectedAdicionales = remember { mutableStateListOf<Adicional>() }
+fun BuyScreen(dispositivo: DispositivoModel, viewModel: BuyViewModel, navController: NavController) {
+    val selectedOptions = remember { mutableStateMapOf<Int, OpcionModel>() }
+    val selectedAdicionales = remember { mutableStateListOf<AdicionalModel>() }
     val finalPrice by viewModel.finalPrice.collectAsState(initial = 0.0)
 
     Column(
