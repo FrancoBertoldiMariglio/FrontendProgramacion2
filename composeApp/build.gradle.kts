@@ -53,6 +53,7 @@ kotlin {
                 implementation(libs.ktor.client.serialization)
                 implementation(libs.ktor.serialization.kotlinx.json)
                 implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.settings)
             }
         }
         val androidMain by getting {
