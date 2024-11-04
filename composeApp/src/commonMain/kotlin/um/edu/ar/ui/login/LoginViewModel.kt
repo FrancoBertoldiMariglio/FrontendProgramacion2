@@ -52,11 +52,11 @@ class LoginViewModel : ViewModel() {
 
                 val loginModel = LoginModel(username.value, password.value)
                 val loginResponse = loginService.login(loginModel)
-                val token = loginResponse.id_token ?: ""
+                val token = loginResponse.idToken ?: ""
 
                 if (token.isNotEmpty()) {
                     settings.putString("jwtToken", token)
-                    settings.putLong("userId", loginResponse.user_id)
+                    settings.putLong("userId", loginResponse.userId)
                     settings.putString("roles", loginResponse.roles.joinToString(",") { it.name })
 
                     navController.navigate("dispositivos")

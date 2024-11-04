@@ -12,19 +12,20 @@ data class Authority(val name: String)
 
 @Serializable
 data class LoginResponse(
-    val id_token: String?,
-    val user_id: Long,
+    val idToken: String?,
+    val userId: Long,
     val roles: Set<Authority>
 )
 
 class LoginService(private val client: HttpClient) {
     suspend fun login(loginModel: LoginModel): LoginResponse {
-        return try {
-            val response = client.post("http://localhost:8080/api/authenticate") {
+        try {
+            val response = client.post("http://192.168.0.106:8080/api/authenticate") {
                 contentType(ContentType.Application.Json)
                 setBody(loginModel)
             }
-            response.body()
+            val responseBody: LoginResponse = response.body()
+            return responseBody
         } catch (e: Exception) {
             throw e
         }

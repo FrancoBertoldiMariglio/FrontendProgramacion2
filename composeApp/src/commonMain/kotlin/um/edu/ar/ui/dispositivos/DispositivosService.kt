@@ -22,7 +22,7 @@ class DispositivosService(private val client: HttpClient) {
 
     suspend fun getDispositivos(): DispositivosResponse {
         val token = settings.getString("jwtToken", "")
-        val response: HttpResponse = client.get("http://localhost:8080/api/dispositivos") {
+        val response: HttpResponse = client.get("http://192.168.0.106:8080/api/dispositivos") {
             headers {
                 append(HttpHeaders.Authorization, "Bearer $token")
             }
