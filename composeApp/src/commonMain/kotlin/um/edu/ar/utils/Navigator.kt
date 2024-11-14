@@ -1,5 +1,6 @@
 package um.edu.ar.utils
 
+import BuyScreen
 import DispositivosScreen
 import DispositivosViewModel
 import LoginViewModel
@@ -11,10 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import kotlinx.serialization.json.Json
-import um.edu.ar.ui.buy.BuyScreen
 import um.edu.ar.ui.buy.BuyViewModel
-import um.edu.ar.ui.dispositivos.DispositivoModel
 import um.edu.ar.ui.register.RegisterScreen
 import um.edu.ar.ui.login.LoginScreen
 
@@ -35,14 +33,17 @@ fun AppNavigation() {
             DispositivosScreen(viewModel = DispositivosViewModel(), navController = navController)
         }
         composable(
-            route = "buy/{dispositivoJson}",
-            arguments = listOf(navArgument("dispositivoJson") { type = NavType.StringType })
+            route = "buy/{dispositivoId}",
+            arguments = listOf(
+                navArgument("dispositivoId") { type = NavType.IntType }
+            )
         ) { backStackEntry ->
-            val dispositivoJson = backStackEntry.arguments?.getString("dispositivoJson")
-            dispositivoJson?.let {
-                val dispositivo = Json.decodeFromString<DispositivoModel>(it)
-                BuyScreen(dispositivo = dispositivo, viewModel = BuyViewModel(), navController = navController)
-            }
+            val dispositivoId = backStackEntry.arguments?.getInt("dispositivoId") ?: return@composable
+            BuyScreen(
+                dispositivoId = dispositivoId,
+                viewModel = BuyViewModel(),
+                navController = navController
+            )
         }
     }
 }

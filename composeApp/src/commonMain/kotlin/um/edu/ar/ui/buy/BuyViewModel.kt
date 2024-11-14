@@ -1,93 +1,136 @@
 package um.edu.ar.ui.buy
 
-import kotlinx.coroutines.flow.Flow
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import um.edu.ar.ui.dispositivos.DispositivoModel
-import um.edu.ar.ui.dispositivos.OpcionModel
 import um.edu.ar.ui.dispositivos.AdicionalModel
+import um.edu.ar.ui.dispositivos.DispositivosService
+import um.edu.ar.ui.dispositivos.OpcionModel
+import um.edu.ar.utils.createPlatformHttpClient
 
-class BuyViewModel {
 
-    private val _dispositivo = MutableStateFlow<DispositivoModel?>(null)
-    val dispositivo: StateFlow<DispositivoModel?> = _dispositivo
+class BuyViewModel : ViewModel() {
+    private val client = createPlatformHttpClient()
+    private val buyService = BuyService(client)
+    private val dispositivosService = DispositivosService(client)
 
-    private val _selectedOptions = MutableStateFlow<Map<Int, OpcionModel>>(emptyMap())
-    val selectedOptions: StateFlow<Map<Int, OpcionModel>> = _selectedOptions
+    private val _uiState = MutableStateFlow(BuyModel())
+    val uiState: StateFlow<BuyModel> = _uiState
 
-    private val _selectedAdicionales = MutableStateFlow<List<AdicionalModel>>(emptyList())
-    val selectedAdicionales: StateFlow<List<AdicionalModel>> = _selectedAdicionales
+    fun loadDispositivo(id: Int) {
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(isLoading = true)
 
-    private val _finalPrice = MutableStateFlow(0.0)
-    val finalPrice: StateFlow<Double> = _finalPrice
-
-    fun getDispositivoById(id: String): DispositivoModel? {
-        return _dispositivo.value
+                dispositivosService.getDispositivo(id)
+                    .onSuccess { dispositivo ->
+                        _uiState.value = _uiState.value.copy(
+                            dispositivo = dispositivo,
+                            isLoading = false,
+                            error = null
+                        )
+                    }
+                    .onFailure { exception ->
+                        _uiState.value = _uiState.value.copy(
+                            dispositivo = null,
+                            isLoading = false,
+                            error = exception.message ?: "Error al cargar el dispositivo"
+                        )
+                    }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    dispositivo = null,
+                    error = "Error al cargar el dispositivo: ${e.message}",
+                    isLoading = false
+                )
+            }
+        }
     }
 
     fun selectOption(personalizacionId: Int, opcion: OpcionModel) {
-        _selectedOptions.value = _selectedOptions.value.toMutableMap().apply {
+        val currentState = _uiState.value
+        val newOptions = currentState.selectedOptions.toMutableMap().apply {
             put(personalizacionId, opcion)
         }
-        _finalPrice.value = calculateFinalPrice()
+        updatePrice(newOptions, currentState.selectedAdicionales)
     }
 
     fun toggleAdicional(adicional: AdicionalModel) {
-        _selectedAdicionales.value = _selectedAdicionales.value.toMutableList().apply {
-            if (contains(adicional)) {
-                remove(adicional)
-            } else {
-                add(adicional)
-            }
+        val currentState = _uiState.value
+        val newAdicionales = currentState.selectedAdicionales.toMutableList().apply {
+            if (contains(adicional)) remove(adicional) else add(adicional)
         }
-        _finalPrice.value = calculateFinalPrice()
+        updatePrice(currentState.selectedOptions, newAdicionales)
     }
 
-    private fun calculateFinalPrice(): Double {
-        val dispositivo = _dispositivo.value ?: return 0.0
+    private fun updatePrice(
+        options: Map<Int, OpcionModel>,
+        adicionales: List<AdicionalModel>
+    ) {
+        val currentState = _uiState.value
+        val dispositivo = currentState.dispositivo ?: return
+
         val basePrice = dispositivo.precioBase
-
-        val personalizacionesPrice = _selectedOptions.value.values.sumOf { it.precioAdicional }
-
-        val adicionalesPrice = _selectedAdicionales.value.sumOf { adicional ->
-            if (adicional.precioGratis != -1.0 && basePrice + personalizacionesPrice > adicional.precioGratis) {
+        val optionsPrice = options.values.sumOf { it.precioAdicional }
+        val adicionalesPrice = adicionales.sumOf { adicional ->
+            if (adicional.precioGratis != -1.0 && basePrice + optionsPrice > adicional.precioGratis) {
                 0.0
             } else {
                 adicional.precio
             }
         }
 
-        return basePrice + personalizacionesPrice + adicionalesPrice
+        _uiState.value = currentState.copy(
+            selectedOptions = options,
+            selectedAdicionales = adicionales,
+            finalPrice = basePrice + optionsPrice + adicionalesPrice
+        )
     }
 
-    fun createBuyRequest(): BuyRequest? {
-        val dispositivo = _dispositivo.value ?: return null
-        val finalPrice = calculateFinalPrice()
-        val fechaVenta = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString()
+    fun processPurchase() {
+        val currentState = _uiState.value
+        val dispositivo = currentState.dispositivo ?: return
 
-        val personalizaciones = _selectedOptions.value.map { (id, opcion) ->
-            SeleccionPersonalizacion(id, opcion.precioAdicional)
-        }
+        viewModelScope.launch {
+            _uiState.value = currentState.copy(isLoading = true)
+            try {
+                val buyRequest = BuyRequest(
+                    idDispositivo = dispositivo.id,
+                    personalizaciones = currentState.selectedOptions.map { (id, opcion) ->
+                        SeleccionPersonalizacion(id, opcion.precioAdicional)
+                    },
+                    adicionales = currentState.selectedAdicionales.map { adicional ->
+                        SeleccionAdicional(adicional.id, adicional.precio)
+                    },
+                    precioFinal = currentState.finalPrice,
+                    fechaVenta = Clock.System.now().toLocalDateTime(TimeZone.UTC).toString()
+                )
 
-        val adicionales = _selectedAdicionales.value.map { adicional ->
-            val adicionalPrice = if (adicional.precioGratis != -1.0 && finalPrice > adicional.precioGratis) {
-                0.0
-            } else {
-                adicional.precio
+                buyService.processPurchase(buyRequest)
+                    .onSuccess { buyResponse ->
+                        _uiState.value = currentState.copy(
+                            isLoading = false,
+                            error = null
+                        )
+                    }
+                    .onFailure { exception ->
+                        _uiState.value = currentState.copy(
+                            isLoading = false,
+                            error = exception.message
+                        )
+                    }
+            } catch (e: Exception) {
+                _uiState.value = currentState.copy(
+                    isLoading = false,
+                    error = "Error al procesar la compra: ${e.message}"
+                )
             }
-            SeleccionAdicional(adicional.id, adicionalPrice)
         }
-
-        return BuyRequest(
-            idDispositivo = dispositivo.id,
-            personalizaciones = personalizaciones,
-            adicionales = adicionales,
-            precioFinal = finalPrice,
-            fechaVenta = fechaVenta
-        )
     }
 }

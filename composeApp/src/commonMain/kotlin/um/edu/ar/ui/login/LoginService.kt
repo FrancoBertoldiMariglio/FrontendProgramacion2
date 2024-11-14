@@ -20,7 +20,7 @@ data class LoginResponse(
 class LoginService(private val client: HttpClient) {
     suspend fun login(loginModel: LoginModel): LoginResponse {
         try {
-            val response = client.post("http://192.168.0.106:8080/api/authenticate") {
+            val response = client.post("http://192.168.1.37:8080/api/authenticate") {
                 contentType(ContentType.Application.Json)
                 setBody(loginModel)
             }

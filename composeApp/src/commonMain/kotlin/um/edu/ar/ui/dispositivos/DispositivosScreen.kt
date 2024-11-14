@@ -12,8 +12,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import um.edu.ar.ui.dispositivos.DispositivoModel
 
 @Composable
@@ -70,16 +68,15 @@ fun DispositivoCard(dispositivo: DispositivoModel, navController: NavController)
                 Text("• ${caracteristica.nombre}: ${caracteristica.descripcion}")
             }
             Spacer(modifier = Modifier.height(8.dp))
-            BuyButton(dispositivo, navController)
+            BuyButton(dispositivo.id, navController)
         }
     }
 }
 
 @Composable
-fun BuyButton(dispositivo: DispositivoModel, navController: NavController) {
-    val dispositivoJson = Json.encodeToString(dispositivo)
+fun BuyButton(dispositivoId: Int, navController: NavController) {
     Button(
-        onClick = { navController.navigate("buy/$dispositivoJson") },
+        onClick = { navController.navigate("buy/$dispositivoId") },
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp),

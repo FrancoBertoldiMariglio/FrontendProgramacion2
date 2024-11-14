@@ -16,13 +16,16 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class DispositivosResponse(val success: Boolean, val dispositivos: List<DispositivoModel>?)
 
+@Serializable
+data class DispositivoResponse(val success: Boolean, val dispositivo: DispositivoModel?)
+
 class DispositivosService(private val client: HttpClient) {
 
     val settings: Settings = Settings()
 
     suspend fun getDispositivos(): DispositivosResponse {
         val token = settings.getString("jwtToken", "")
-        val response: HttpResponse = client.get("http://192.168.0.106:8080/api/dispositivos") {
+        val response: HttpResponse = client.get("http://192.168.1.37:8080/api/dispositivos") {
             headers {
                 append(HttpHeaders.Authorization, "Bearer $token")
             }
@@ -32,6 +35,40 @@ class DispositivosService(private val client: HttpClient) {
             DispositivosResponse(success = true, dispositivos = response.body())
         } else {
             DispositivosResponse(success = false, dispositivos = null)
+        }
+    }
+
+    suspend fun getDispositivo(id: Int): Result<DispositivoModel> {
+        try {
+            val token = settings.getString("jwtToken", "")
+            println("Obteniendo dispositivo con ID: $id") // Log para debug
+
+            val response: HttpResponse = client.get("http://192.168.1.37:8080/api/dispositivos/$id") {
+                headers {
+                    append(HttpHeaders.Authorization, "Bearer $token")
+                }
+                contentType(ContentType.Application.Json)
+            }
+
+            println("Status de la respuesta: ${response.status}") // Log para debug
+
+            if (response.status == HttpStatusCode.OK) {
+                val dto: DispositivoDTO = response.body()
+                println("Dispositivo recibido: ${dto.nombre}") // Log para debug
+                println("Características: ${dto.caracteristicas.size}") // Log para debug
+                println("Personalizaciones: ${dto.personalizaciones.size}") // Log para debug
+                println("Adicionales: ${dto.adicionales.size}") // Log para debug
+
+                val model = dto.toModel()
+                return Result.success(model)
+            } else {
+                println("Error en la respuesta: ${response.status}") // Log para debug
+                return Result.failure(Exception("Error al obtener el dispositivo: ${response.status}"))
+            }
+        } catch (e: Exception) {
+            println("Error en getDispositivo: ${e.message}") // Log para debug
+            e.printStackTrace()
+            return Result.failure(e)
         }
     }
 }
