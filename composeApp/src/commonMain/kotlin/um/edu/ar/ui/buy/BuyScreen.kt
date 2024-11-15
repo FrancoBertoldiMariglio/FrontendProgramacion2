@@ -38,21 +38,7 @@ fun BuyScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    val lastValidDispositivo = remember(dispositivoId) {
-        mutableStateOf<DispositivoModel?>(null)
-    }
-
-    val currentState by remember(uiState) {
-        derivedStateOf {
-            if (uiState.dispositivo != null) {
-                lastValidDispositivo.value = uiState.dispositivo
-            }
-            uiState.copy(dispositivo = uiState.dispositivo ?: lastValidDispositivo.value)
-        }
-    }
-
     LaunchedEffect(dispositivoId) {
-        println("LaunchedEffect: Cargando dispositivo ID $dispositivoId")
         viewModel.loadDispositivo(dispositivoId)
     }
 
@@ -62,27 +48,24 @@ fun BuyScreen(
             .padding(16.dp)
     ) {
         when {
-            currentState.isLoading && currentState.dispositivo == null -> {
-                println("UI State: Initial Loading")
+            uiState.isLoading && uiState.dispositivo == null -> {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
-            currentState.error != null && currentState.dispositivo == null -> {
-                println("UI State: Error - ${currentState.error}")
+            uiState.error != null && uiState.dispositivo == null -> {
                 Text(
-                    text = "Error: ${currentState.error}",
+                    text = "Error: ${uiState.error}",
                     color = MaterialTheme.colors.error,
                     modifier = Modifier.padding(16.dp)
                 )
             }
-            currentState.dispositivo != null -> {
-                println("UI State: Mostrando dispositivo - ${currentState.dispositivo?.nombre}")
+            uiState.dispositivo != null -> {
                 Column(
                     verticalArrangement = Arrangement.Top,
                     horizontalAlignment = Alignment.Start
                 ) {
-                    currentState.dispositivo?.let { dispositivo ->
+                    uiState.dispositivo?.let { dispositivo ->
                         Text("Comprar ${dispositivo.nombre}", style = MaterialTheme.typography.h5)
                         Spacer(modifier = Modifier.height(16.dp))
                         Text("Precio: $${dispositivo.precioBase}", style = MaterialTheme.typography.h6)
@@ -92,26 +75,30 @@ fun BuyScreen(
 
                         PersonalizacionesList(
                             personalizaciones = dispositivo.personalizaciones,
-                            selectedOptions = currentState.selectedOptions,
-                            onOptionSelected = viewModel::selectOption
+                            selectedOptions = uiState.selectedOptions,
+                            onOptionSelected = { persId, opcionId, precio ->
+                                viewModel.updateSelection(persId, opcionId, precio)
+                            }
                         )
 
                         AdicionalesList(
                             adicionales = dispositivo.adicionales,
-                            selectedAdicionales = currentState.selectedAdicionales,
-                            onAdicionalToggled = viewModel::toggleAdicional
+                            selectedAdicionales = uiState.selectedAdicionales,
+                            onAdicionalToggled = { adicionalId, precio ->
+                                viewModel.toggleAdicional(adicionalId, precio)
+                            }
                         )
 
                         Spacer(modifier = Modifier.height(32.dp))
 
-                        if (currentState.isLoading) {
+                        if (uiState.isLoading) {
                             LinearProgressIndicator(
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
 
                         PriceAndConfirmation(
-                            finalPrice = currentState.finalPrice,
+                            precioFinal = uiState.finalPrice,
                             onConfirmClick = { viewModel.processPurchase() },
                             isLoading = currentState.isLoading
                         )
@@ -119,7 +106,6 @@ fun BuyScreen(
                 }
             }
             else -> {
-                println("UI State: No content available")
                 Text(
                     text = "No se pudo cargar el dispositivo",
                     modifier = Modifier.padding(16.dp)
@@ -165,8 +151,8 @@ private fun CharacteristicsList(caracteristicas: List<CaracteristicaModel>) {
 @Composable
 private fun PersonalizacionesList(
     personalizaciones: List<PersonalizacionModel>,
-    selectedOptions: Map<Int, OpcionModel>,
-    onOptionSelected: (Int, OpcionModel) -> Unit
+    selectedOptions: Map<Int, Pair<Int, Double>>,
+    onOptionSelected: (Int, Int, Double) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -206,17 +192,23 @@ private fun PersonalizacionesList(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    println("Seleccionando opción: ${opcion.nombre} para ${personalizacion.nombre}")
-                                    onOptionSelected(personalizacion.id, opcion)
+                                    onOptionSelected(
+                                        personalizacion.id,
+                                        opcion.id,
+                                        opcion.precioAdicional
+                                    )
                                 }
                                 .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
-                                selected = selectedOptions[personalizacion.id] == opcion,
+                                selected = selectedOptions[personalizacion.id]?.first == opcion.id,
                                 onClick = {
-                                    println("Radio button clicked: ${opcion.nombre}")
-                                    onOptionSelected(personalizacion.id, opcion)
+                                    onOptionSelected(
+                                        personalizacion.id,
+                                        opcion.id,
+                                        opcion.precioAdicional
+                                    )
                                 }
                             )
                             Column(
@@ -248,8 +240,8 @@ private fun PersonalizacionesList(
 @Composable
 private fun AdicionalesList(
     adicionales: List<AdicionalModel>,
-    selectedAdicionales: List<AdicionalModel>,
-    onAdicionalToggled: (AdicionalModel) -> Unit
+    selectedAdicionales: Map<Int, Double>,
+    onAdicionalToggled: (Int, Double) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -278,17 +270,15 @@ private fun AdicionalesList(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                println("Clic en adicional: ${adicional.nombre}")
-                                onAdicionalToggled(adicional)
+                                onAdicionalToggled(adicional.id, adicional.precio)
                             }
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Checkbox(
-                            checked = selectedAdicionales.contains(adicional),
+                            checked = selectedAdicionales.containsKey(adicional.id),
                             onCheckedChange = {
-                                println("Checkbox changed for: ${adicional.nombre}")
-                                onAdicionalToggled(adicional)
+                                onAdicionalToggled(adicional.id, adicional.precio)
                             }
                         )
                         Column(
@@ -334,7 +324,7 @@ private fun AdicionalesList(
 
 @Composable
 private fun PriceAndConfirmation(
-    finalPrice: Double,
+    precioFinal: Double,
     onConfirmClick: () -> Unit,
     isLoading: Boolean
 ) {
@@ -355,17 +345,14 @@ private fun PriceAndConfirmation(
                 style = MaterialTheme.typography.h6
             )
             Text(
-                "$${(finalPrice * 100).toInt() / 100.0}",  // Redondeo a 2 decimales
+                "$${(precioFinal * 100).toInt() / 100.0}",
                 style = MaterialTheme.typography.h4,
                 color = MaterialTheme.colors.primary,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
 
             Button(
-                onClick = {
-                    println("Clic en botón confirmar compra")
-                    onConfirmClick()
-                },
+                onClick = onConfirmClick,
                 enabled = !isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
