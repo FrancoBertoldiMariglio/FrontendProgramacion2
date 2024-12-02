@@ -57,7 +57,10 @@ class LoginViewModel : ViewModel() {
                 if (token.isNotEmpty()) {
                     settings.putString("jwtToken", token)
                     settings.putLong("userId", loginResponse.userId)
+                    settings.putString("username", loginResponse.login)
                     settings.putString("roles", loginResponse.roles.joinToString(",") { it.name })
+
+                    println("LoginViewModel - Login successful $loginResponse")
 
                     navController.navigate("dispositivos")
                 } else {
@@ -65,12 +68,14 @@ class LoginViewModel : ViewModel() {
                     settings.remove("jwtToken")
                     settings.remove("userId")
                     settings.remove("roles")
+                    settings.remove("username")
                 }
             } catch (e: Exception) {
                 _loginError.value = "An error occurred: ${e.message}"
                 settings.remove("jwtToken")
                 settings.remove("userId")
                 settings.remove("roles")
+                settings.remove("username")
             } finally {
                 _isLoading.value = false
             }

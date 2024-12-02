@@ -6,13 +6,14 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
 import um.edu.ar.ui.register.RegisterModel
+import um.edu.ar.Constants
 
 @Serializable
 data class RegisterResponse(val success: Boolean, val message: String?)
 
 class RegisterService(private val client: HttpClient) {
     suspend fun register(registerModel: RegisterModel): RegisterResponse {
-        val response: HttpResponse = client.post("http://192.168.0.106:8080/api/register") {
+        val response: HttpResponse = client.post(Constants.BASE_URL + "/register") {
             contentType(ContentType.Application.Json)
             setBody(registerModel)
         }

@@ -6,12 +6,14 @@ import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.utils.EmptyContent.contentType
 import io.ktor.client.utils.EmptyContent.headers
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import kotlinx.serialization.Serializable
+import um.edu.ar.Constants
 
 @Serializable
 data class DispositivosResponse(val success: Boolean, val dispositivos: List<DispositivoModel>?)
@@ -25,7 +27,8 @@ class DispositivosService(private val client: HttpClient) {
 
     suspend fun getDispositivos(): DispositivosResponse {
         val token = settings.getString("jwtToken", "")
-        val response: HttpResponse = client.get("http://192.168.1.37:8080/api/dispositivos") {
+        // ver de usar una interfaz virtual para que cambie dinamicamenta la IP
+        val response: HttpResponse = client.get(Constants.BASE_URL + "/dispositivos") {
             headers {
                 append(HttpHeaders.Authorization, "Bearer $token")
             }
@@ -43,7 +46,7 @@ class DispositivosService(private val client: HttpClient) {
             val token = settings.getString("jwtToken", "")
             println("Obteniendo dispositivo con ID: $id") // Log para debug
 
-            val response: HttpResponse = client.get("http://192.168.1.37:8080/api/dispositivos/$id") {
+            val response: HttpResponse = client.get(Constants.BASE_URL + "/dispositivos/$id") {
                 headers {
                     append(HttpHeaders.Authorization, "Bearer $token")
                 }

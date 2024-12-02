@@ -15,8 +15,21 @@ class BuyViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(BuyModel())
     val uiState: StateFlow<BuyModel> = _uiState
+    private var isLoaded = false
+
+    init {
+        println("BuyViewModel inicializado") // Agregar este log
+    }
 
     fun loadDispositivo(id: Int) {
+
+        if (isLoaded) {
+            println("Dispositivo ya cargado, ignorando llamada")
+            return
+        }
+
+        isLoaded = true
+
         viewModelScope.launch {
             try {
                 _uiState.update { it.copy(isLoading = true, error = null) }
@@ -48,6 +61,7 @@ class BuyViewModel(
                         println("BuyViewModel - Estado actualizado con dispositivo")
                     },
                     onFailure = { error ->
+                        isLoaded = false
                         println("BuyViewModel - Error al cargar dispositivo: ${error.message}")
                         _uiState.update {
                             it.copy(
@@ -59,6 +73,7 @@ class BuyViewModel(
                     }
                 )
             } catch (e: Exception) {
+                isLoaded = false
                 println("BuyViewModel - Excepción al cargar dispositivo: ${e.message}")
                 e.printStackTrace()
                 _uiState.update {
@@ -82,7 +97,7 @@ class BuyViewModel(
 
                 val ventaRequest = VentaRequest(
                     fechaVenta = Clock.System.now().toString(),
-                    ganancia = currentState.precioFinal * 0.2, // 20% de ganancia
+                    ganancia = currentState.precioFinal,
                     user = UserDTO(userId, username),
                     idDispositivo = dispositivo.id,
                     personalizaciones = currentState.selectedOptions.map { (id, pair) ->
@@ -114,11 +129,24 @@ class BuyViewModel(
 
     fun toggleAdicional(adicionalId: Int, precio: Double) {
         _uiState.update { state ->
+            val adicional = state.dispositivo?.adicionales?.find { it.id == adicionalId } ?: return@update state
+
             val newAdicionales = state.selectedAdicionales.toMutableMap()
             if (adicionalId in newAdicionales) {
                 newAdicionales.remove(adicionalId)
             } else {
-                newAdicionales[adicionalId] = precio
+                // Si precioGratis es -1 o el precio base + opciones no supera precioGratis, se usa el precio normal
+                val precioBase = state.dispositivo.precioBase
+                val optionsPrice = state.selectedOptions.values.sumOf { it.second }
+                val subtotal = precioBase + optionsPrice
+
+                val precioFinal = if (adicional.precioGratis == -1.0 || subtotal <= adicional.precioGratis) {
+                    precio
+                } else {
+                    0.0 // El adicional es gratis
+                }
+
+                newAdicionales[adicionalId] = precioFinal
             }
             calculatePrices(state.copy(selectedAdicionales = newAdicionales))
         }
@@ -128,7 +156,25 @@ class BuyViewModel(
         val dispositivo = state.dispositivo ?: return state
         val basePrice = dispositivo.precioBase
         val optionsPrice = state.selectedOptions.values.sumOf { it.second }
-        val adicionalesPrice = state.selectedAdicionales.values.sum()
-        return state.copy(precioFinal = basePrice + optionsPrice + adicionalesPrice)
+        val subtotalSinAdicionales = basePrice + optionsPrice
+
+        // Calcular precio de adicionales considerando precioGratis
+        val adicionalesPrice = state.selectedAdicionales.entries.sumOf { (adicionalId, precio) ->
+            val adicional = dispositivo.adicionales.find { it.id == adicionalId } ?: return@sumOf 0.0
+
+            // Si precioGratis es -1, siempre se cobra
+            if (adicional.precioGratis == -1.0) {
+                precio
+            } else {
+                // Si el subtotal supera precioGratis, el adicional es gratis
+                if (subtotalSinAdicionales > adicional.precioGratis) {
+                    0.0
+                } else {
+                    precio
+                }
+            }
+        }
+
+        return state.copy(precioFinal = subtotalSinAdicionales + adicionalesPrice)
     }
 }

@@ -1,374 +1,239 @@
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+package um.edu.ar.ui.buy
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import um.edu.ar.ui.buy.BuyViewModel
-import um.edu.ar.ui.dispositivos.AdicionalModel
-import um.edu.ar.ui.dispositivos.CaracteristicaModel
-import um.edu.ar.ui.dispositivos.OpcionModel
-import um.edu.ar.ui.dispositivos.PersonalizacionModel
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import um.edu.ar.ui.dispositivos.DispositivoModel
-
+import com.russhwolf.settings.Settings
 
 @Composable
 fun BuyScreen(
-    dispositivoId: Int,
     viewModel: BuyViewModel,
-    navController: NavController
+    dispositivoId: Int,
+    onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val settings: Settings = Settings()
+
+    val userId = settings.getInt("userId", 0)
+    val username = settings.getString("username", "")
 
     LaunchedEffect(dispositivoId) {
         viewModel.loadDispositivo(dispositivoId)
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        when {
-            uiState.isLoading && uiState.dispositivo == null -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
-                )
+    when {
+        uiState.isLoading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
             }
-            uiState.error != null && uiState.dispositivo == null -> {
+        }
+        uiState.error != null -> {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(16.dp)
+            ) {
                 Text(
-                    text = "Error: ${uiState.error}",
+                    text = uiState.error!!,
                     color = MaterialTheme.colors.error,
                     modifier = Modifier.padding(16.dp)
                 )
             }
-            uiState.dispositivo != null -> {
-                Column(
-                    verticalArrangement = Arrangement.Top,
-                    horizontalAlignment = Alignment.Start
-                ) {
-                    uiState.dispositivo?.let { dispositivo ->
-                        Text("Comprar ${dispositivo.nombre}", style = MaterialTheme.typography.h5)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text("Precio: $${dispositivo.precioBase}", style = MaterialTheme.typography.h6)
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        CharacteristicsList(dispositivo.caracteristicas)
-
-                        PersonalizacionesList(
-                            personalizaciones = dispositivo.personalizaciones,
-                            selectedOptions = uiState.selectedOptions,
-                            onOptionSelected = { persId, opcionId, precio ->
-                                viewModel.updateSelection(persId, opcionId, precio)
-                            }
-                        )
-
-                        AdicionalesList(
-                            adicionales = dispositivo.adicionales,
-                            selectedAdicionales = uiState.selectedAdicionales,
-                            onAdicionalToggled = { adicionalId, precio ->
-                                viewModel.toggleAdicional(adicionalId, precio)
-                            }
-                        )
-
-                        Spacer(modifier = Modifier.height(32.dp))
-
-                        if (uiState.isLoading) {
-                            LinearProgressIndicator(
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-
-                        PriceAndConfirmation(
-                            precioFinal = uiState.finalPrice,
-                            onConfirmClick = { viewModel.processPurchase() },
-                            isLoading = currentState.isLoading
-                        )
-                    }
-                }
-            }
-            else -> {
-                Text(
-                    text = "No se pudo cargar el dispositivo",
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
         }
-    }
-}
-
-@Composable
-private fun CharacteristicsList(caracteristicas: List<CaracteristicaModel>) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
-        Text(
-            "Características:",
-            style = MaterialTheme.typography.h6,
-            modifier = Modifier.padding(bottom = 8.dp)
+        uiState.dispositivo == null -> Text("No hay dispositivo seleccionado")
+        else -> BuyContent(
+            uiState = uiState,
+            onOptionSelect = viewModel::updateSelection,
+            onAdicionalToggle = viewModel::toggleAdicional,
+            onPurchase = { viewModel.processPurchase(userId, username) }
         )
-        caracteristicas.forEach { caracteristica ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-            ) {
-                Text(
-                    "• ${caracteristica.nombre}:",
-                    style = MaterialTheme.typography.subtitle1,
-                    modifier = Modifier.width(120.dp)
-                )
-                Text(
-                    caracteristica.descripcion,
-                    style = MaterialTheme.typography.body1
-                )
-            }
-        }
     }
-    Spacer(modifier = Modifier.height(16.dp))
 }
 
 @Composable
-private fun PersonalizacionesList(
-    personalizaciones: List<PersonalizacionModel>,
-    selectedOptions: Map<Int, Pair<Int, Double>>,
-    onOptionSelected: (Int, Int, Double) -> Unit
+private fun BuyContent(
+    uiState: BuyModel,
+    onOptionSelect: (Int, Int, Double) -> Unit,
+    onAdicionalToggle: (Int, Double) -> Unit,
+    onPurchase: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
-        Text(
-            "Personalizaciones:",
-            style = MaterialTheme.typography.h6,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        personalizaciones.forEach { personalizacion ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                elevation = 4.dp
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        personalizacion.nombre,
-                        style = MaterialTheme.typography.h6
-                    )
-                    Text(
-                        personalizacion.descripcion,
-                        style = MaterialTheme.typography.caption,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-
-                    personalizacion.opciones.forEach { opcion ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onOptionSelected(
-                                        personalizacion.id,
-                                        opcion.id,
-                                        opcion.precioAdicional
-                                    )
-                                }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = selectedOptions[personalizacion.id]?.first == opcion.id,
-                                onClick = {
-                                    onOptionSelected(
-                                        personalizacion.id,
-                                        opcion.id,
-                                        opcion.precioAdicional
-                                    )
-                                }
-                            )
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(start = 8.dp)
-                            ) {
-                                Text(
-                                    opcion.nombre,
-                                    style = MaterialTheme.typography.subtitle1
-                                )
-                                if (opcion.precioAdicional > 0) {
-                                    Text(
-                                        "+$${opcion.precioAdicional}",
-                                        style = MaterialTheme.typography.caption,
-                                        color = MaterialTheme.colors.secondary
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    Spacer(modifier = Modifier.height(16.dp))
-}
-
-@Composable
-private fun AdicionalesList(
-    adicionales: List<AdicionalModel>,
-    selectedAdicionales: Map<Int, Double>,
-    onAdicionalToggled: (Int, Double) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-    ) {
-        Text(
-            "Adicionales:",
-            style = MaterialTheme.typography.h6,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            elevation = 4.dp
+    Surface(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                adicionales.forEach { adicional ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onAdicionalToggled(adicional.id, adicional.precio)
-                            }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = selectedAdicionales.containsKey(adicional.id),
-                            onCheckedChange = {
-                                onAdicionalToggled(adicional.id, adicional.precio)
-                            }
+            // Header Card
+            item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = uiState.dispositivo?.nombre ?: "",
+                            style = MaterialTheme.typography.h6
                         )
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 8.dp)
-                        ) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(uiState.dispositivo?.descripcion ?: "")
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "Precio base: $${uiState.dispositivo?.precioBase ?: "0.00"}",
+                            style = MaterialTheme.typography.subtitle1
+                        )
+                    }
+                }
+            }
+
+            // Personalizaciones
+            uiState.dispositivo?.personalizaciones?.forEach { personalizacion ->
+                item {
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                adicional.nombre,
+                                text = personalizacion.nombre,
                                 style = MaterialTheme.typography.subtitle1
                             )
-                            Text(
-                                adicional.descripcion,
-                                style = MaterialTheme.typography.caption
-                            )
-                            Row(
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.fillMaxWidth()
+                            Spacer(Modifier.height(8.dp))
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Text(
-                                    "Precio: $${adicional.precio}",
-                                    style = MaterialTheme.typography.caption,
-                                    color = MaterialTheme.colors.secondary
-                                )
-                                if (adicional.precioGratis != -1.0) {
-                                    Text(
-                                        "(Gratis si el total supera $${adicional.precioGratis})",
-                                        style = MaterialTheme.typography.caption,
-                                        color = MaterialTheme.colors.primary
-                                    )
+                                personalizacion.opciones.chunked(2).forEach { rowOptions ->
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        rowOptions.forEach { opcion ->
+                                            val isSelected = uiState.selectedOptions[personalizacion.id]?.first == opcion.id
+                                            OutlinedButton(
+                                                onClick = {
+                                                    onOptionSelect(
+                                                        personalizacion.id,
+                                                        opcion.id,
+                                                        opcion.precioAdicional ?: 0.0
+                                                    )
+                                                },
+                                                modifier = Modifier.weight(1f),
+                                                colors = ButtonDefaults.outlinedButtonColors(
+                                                    backgroundColor = if (isSelected) {
+                                                        MaterialTheme.colors.primary
+                                                    } else {
+                                                        MaterialTheme.colors.surface
+                                                    },
+                                                    contentColor = if (isSelected) {
+                                                        MaterialTheme.colors.onPrimary
+                                                    } else {
+                                                        MaterialTheme.colors.onSurface
+                                                    }
+                                                )
+                                            ) {
+                                                Text("${opcion.nombre} ${opcion.precioAdicional?.let { "(+$$it)" } ?: ""}")
+                                            }
+                                        }
+                                        if (rowOptions.size == 1) {
+                                            Spacer(modifier = Modifier.weight(1f))
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
-                    if (adicional != adicionales.last()) {
-                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                }
+            }
+
+            // Adicionales
+            if (uiState.dispositivo?.adicionales?.isNotEmpty() == true) {
+                item {
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "Adicionales",
+                                style = MaterialTheme.typography.subtitle1
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                uiState.dispositivo.adicionales.chunked(2).forEach { rowAdicionales ->
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        rowAdicionales.forEach { adicional ->
+                                            val isSelected = adicional.id in uiState.selectedAdicionales
+                                            OutlinedButton(
+                                                onClick = {
+                                                    onAdicionalToggle(
+                                                        adicional.id,
+                                                        adicional.precio ?: 0.0
+                                                    )
+                                                },
+                                                modifier = Modifier.weight(1f),
+                                                colors = ButtonDefaults.outlinedButtonColors(
+                                                    backgroundColor = if (isSelected) {
+                                                        MaterialTheme.colors.primary
+                                                    } else {
+                                                        MaterialTheme.colors.surface
+                                                    },
+                                                    contentColor = if (isSelected) {
+                                                        MaterialTheme.colors.onPrimary
+                                                    } else {
+                                                        MaterialTheme.colors.onSurface
+                                                    }
+                                                )
+                                            ) {
+                                                Text("${adicional.nombre} ${adicional.precio?.let { "(+$$it)" } ?: ""}")
+                                            }
+                                        }
+                                        if (rowAdicionales.size == 1) {
+                                            Spacer(modifier = Modifier.weight(1f))
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
-        }
-    }
-}
 
-@Composable
-private fun PriceAndConfirmation(
-    precioFinal: Double,
-    onConfirmClick: () -> Unit,
-    isLoading: Boolean
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp),
-        elevation = 8.dp
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                "Precio Final",
-                style = MaterialTheme.typography.h6
-            )
-            Text(
-                "$${(precioFinal * 100).toInt() / 100.0}",
-                style = MaterialTheme.typography.h4,
-                color = MaterialTheme.colors.primary,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-
-            Button(
-                onClick = onConfirmClick,
-                enabled = !isLoading,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                colors = ButtonDefaults.buttonColors(
-                    backgroundColor = MaterialTheme.colors.primary,
-                    contentColor = MaterialTheme.colors.onPrimary
-                )
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colors.onPrimary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                } else {
-                    Text("Confirmar Compra")
+            // Precio Final y Botón de Compra
+            item {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Precio Final:",
+                                style = MaterialTheme.typography.h6
+                            )
+                            Text(
+                                "$${uiState.precioFinal}",
+                                style = MaterialTheme.typography.h6
+                            )
+                        }
+                        Spacer(Modifier.height(16.dp))
+                        Button(
+                            onClick = onPurchase,
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !uiState.isLoading
+                        ) {
+                            if (uiState.isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = MaterialTheme.colors.onPrimary
+                                )
+                            } else {
+                                Text("Confirmar Compra")
+                            }
+                        }
+                    }
                 }
             }
         }
